@@ -33,7 +33,7 @@ class ProgressWindow:
         self.root = tk.Tk()
         self.root.title("Progresso")
         self.root.geometry("200x50+0+0")
-        self.progress_bar = tk.Label(self.root, text="0%", width=10, font=("Helvetica", 12))
+        self.progress_bar = ttk.Progressbar(self.root, length=200, mode="determinate")
         self.progress_bar.pack()
         self.total = total
         self.current = 0
@@ -44,7 +44,7 @@ class ProgressWindow:
 
     def update_progress(self):
         percentage = int((self.current / self.total) * 100)
-        self.progress_bar.config(text=f"{percentage}%")
+        self.progress_bar["value"] = percentage
         self.root.update()
 
     def increment_progress(self):
@@ -69,37 +69,52 @@ def on_release(key, progress_window, listener):
         progress_window.on_close()
         listener.stop()
 
-def simula_scrittura(testo, progress_window):
-    mean_speed = 0.2  # velocità media di scrittura
-    speed_deviation = 0.1  # deviazione standard della velocità
-    error_probability = 0.1  # probabilità di errore per ogni carattere
-
-    chars = list(testo)
+def simulate_typing(text, progress_window, mean_speed, speed_deviation, error_probability):
+    chars = list(text)
     total_chars = len(chars)
+    punctuation_chars = set(".,")
 
-    for char in chars:
-        # Simula la velocità di scrittura con una distribuzione normale
-        pause_interval = random.gauss(mean_speed, speed_deviation)
-        time.sleep(max(0, pause_interval))
+    for idx, char in enumerate(chars):
+        # Introduce una pausa più lunga dopo dei punti o alcune virgole
+        if char in punctuation_chars and random.random() < 0.2:  # 20% di probabilità
+            time.sleep(random.uniform(5, 10))  # Pausa di 5-10 secondi
+        else:
+            # Simula la velocità di scrittura con una distribuzione normale
+            pause_interval = random.gauss(mean_speed, speed_deviation)
+            time.sleep(max(0, pause_interval))
 
         # Introduce un errore con la probabilità specificata
         if random.random() < error_probability:
-            carattere_errato = random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-            keyboard.Controller().type(carattere_errato)
-            time.sleep(0.5)
-            keyboard.Controller().press(keyboard.Key.backspace)
-            time.sleep(0.3)
-            keyboard.Controller().type(char)
+            if random.random() < 0.2:  # 20% di probabilità di cancellare una parola intera
+                keyboard.Controller().press(keyboard.Key.backspace)
+                time.sleep(0.5)
+                keyboard.Controller().press(keyboard.Key.backspace)
+                time.sleep(0.5)
+                keyboard.Controller().type(char)
+            else:
+                wrong_char = random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                keyboard.Controller().type(wrong_char)
+                time.sleep(0.5)
+                keyboard.Controller().press(keyboard.Key.backspace)
+                time.sleep(0.3)
+                keyboard.Controller().type(char)
         else:
             keyboard.Controller().type(char)
             progress_window.increment_progress()
 
     progress_window.on_close()
 
-if __name__ == "__main__":
-    testo_da_scrivere = get_user_input()
+def generate_smooth_variation(initial_value, variation_range, num_steps):
+    values = [initial_value]
+    for _ in range(num_steps - 1):
+        next_value = values[-1] + random.uniform(-variation_range, variation_range)
+        values.append(next_value)
+    return values[-1]
 
-    total_chars = len(testo_da_scrivere)
+if __name__ == "__main__":
+    text_to_type = get_user_input()
+
+    total_chars = len(text_to_type)
 
     progress_window = ProgressWindow(total_chars)
 
@@ -109,7 +124,14 @@ if __name__ == "__main__":
     listener = keyboard.Listener(on_press=lambda k: on_press(k, progress_window),
                                  on_release=lambda k: on_release(k, progress_window, listener))
 
-    threading.Thread(target=simula_scrittura, args=(testo_da_scrivere, progress_window)).start()
+    # Genera valori casuali senza ripetizioni per le variabili
+    mean_speed = generate_smooth_variation(0.5, 0.03, total_chars)
+    speed_deviation = generate_smooth_variation(0.3, 0.01, total_chars)
+    error_probability = generate_smooth_variation(0.1, 0.005, total_chars)
+
+    threading.Thread(target=simulate_typing, args=(text_to_type, progress_window,
+                                                   mean_speed, speed_deviation,
+                                                   error_probability)).start()
 
     listener.start()
     progress_window.root.mainloop()
