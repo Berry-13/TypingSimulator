@@ -29,7 +29,7 @@ This Python script uses the `pyautogui` library to simulate the typing of a give
 
 ## Usage
 
-1. Run the script.
+1. Run the script with `python test.py`
 2. Enter the text you want to be typed when prompted.
 3. The script will start typing the text after a 3-second delay.
 4. Press `Ctrl + L` to stop the script.
