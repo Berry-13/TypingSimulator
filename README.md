@@ -23,10 +23,8 @@ This Python script uses the `pyautogui` library to simulate the typing of a give
 ## Requirements
 
 - Python 3.x
-- `tkinter` library (usually included in Python standard library)
-- `pynput` library (install using `pip install pynput`)
-- `pyautogui` library (install using `pip install pyautogui`)
-
+- run `pip install -r requirements.txt` to install all the requirements
+ 
 ## Usage
 
 1. Run the script with `python test.py`
